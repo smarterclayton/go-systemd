@@ -164,3 +164,35 @@ type UnitStatus struct {
 	JobType     string          // The job type as string
 	JobPath     dbus.ObjectPath // The job object path
 }
+
+func (c *Conn) EnableUnitFiles(files []string, runtime bool, force bool) (carries_install_info bool, changes []EnableUnitFileChange) {
+	result := make([][]interface{}, 0)
+	err := c.sysobj.Call("EnableUnitFiles", 0, files, runtime, force).Store(&result)
+	if err != nil {
+		return nil, err
+	}
+
+	resultInterface := make([]interface{}, len(result))
+	for i := range result {
+		resultInterface[i] = result[i]
+	}
+
+	changes := make([]EnableUnitFileChange, len(result))
+	changesInterface := make([]interface{}, len(changes))
+	for i := range changes {
+		changesInterface[i] = &changes[i]
+	}
+
+	err = dbus.Store(resultInterface, changesInterface...)
+	if err != nil {
+		return nil, err
+	}
+
+	return changes, nil
+}
+
+type EnableUnitFileChange struct {
+	Type		string	// type of the change (one of symlink or unlink)
+	Filename	string	// file name of the symlink
+	Destination	string	// destination of the symlink
+}
